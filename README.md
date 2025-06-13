@@ -1,5 +1,5 @@
 # anonpill
-Anonpill is a python library that automatically anonymizes pillow Image objects, blurring faces and license plates
+Anonpill is a python library that automatically anonymizes [Pillow] (https://github.com/python-pillow/Pillow) Image objects, blurring faces and license plates
 
 
 ## examples:
