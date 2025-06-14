@@ -10,7 +10,6 @@ resH = 640
 def detect(img,facmodel,licpmodel,faces=True,licenseplates=True):
     detections = []
     labels = []
-    #frame =  np.array(img) 
 
     if faces:
         results = facmodel(img, verbose=False)
@@ -33,19 +32,16 @@ def blurRectangle(img,p0,p1):
     draw = ImageDraw.Draw(mask)
     draw.rectangle([ p0,p1], fill=255)
 
-    # Apply the GaussianBlur filter to the entire image
     blurred_image = img.filter(ImageFilter.GaussianBlur(radius=5))
-
-    # Apply the mask to the blurred image
-   # blurred_region = ImageOps.invert(mask)
     img.paste(blurred_image, mask=mask)
-    #blurred_image = Image.composite(blurred_image, img, blurred_region)
+
     return img
 
-def showDetections(im,detections,min_thresh,box = True,blur=True,circle=False):
+def drawDetections(im,detections,min_thresh,box = True,blur=True,circle=False,detectionsize=None):
 
     # Create a drawing object
     draw = ImageDraw.Draw(im)
+    print('n detections: ',len(detections))
     for i in range(len(detections)):
 
         # Get bounding box coordinates
@@ -53,7 +49,15 @@ def showDetections(im,detections,min_thresh,box = True,blur=True,circle=False):
         xyxy_tensor = detections[i].xyxy.cpu() # Detections in Tensor format in CPU memory
         xyxy = xyxy_tensor.numpy().squeeze() # Convert tensors to Numpy array
         xmin, ymin, xmax, ymax = xyxy.astype(int) # Extract individual coordinates and convert to int
+        
+        xratio = im.size[0]/detectionsize[0]
+        yratio = im.size[1]/detectionsize[1]
 
+        xmin = xratio*xmin
+        ymin = yratio*ymin
+        xmax = xratio*xmax
+        ymax = yratio*ymax
+        print(xmin,ymin,xmax,ymax)
         # Get bounding box class ID and name
         classidx = int(detections[i].cls.item())
 
@@ -62,10 +66,10 @@ def showDetections(im,detections,min_thresh,box = True,blur=True,circle=False):
 
         # Draw box if confidence threshold is high enough
         if conf > min_thresh:
-            #if circle:
+            if circle:
                 #center = (int((xmin + xmax)/2),int((ymin + ymax)/2))
                 #radius = int(pointsDistance(center, (xmax,ymax)))
-                #cv2.circle(frame, center, radius, color, 2)
+                draw.ellipse((xmin,ymin,xmax,ymax), outline ='red')
             if blur:
                 im = blurRectangle(im,(xmin,ymin),(xmax,ymax))
             if box:
@@ -76,13 +80,14 @@ def showDetections(im,detections,min_thresh,box = True,blur=True,circle=False):
 
     return im
 
-def getImgDetected(img,facmodel,licpmodel,faces=True,licenseplates=True,box = True,blur=True,min_thresh = 0.5):
-    detections,labels,frame = detect(img,facmodel,licpmodel,faces=faces,licenseplates=licenseplates)
-    frame = showDetections(frame,detections,min_thresh,box = box,blur=blur)
-    return frame
+def getImgAnonymized(img,facmodel,licpmodel,faces=True,licenseplates=True,box = True,blur=True,min_thresh = 0.5,fullsize=True):
+    img = img.convert('RGB')
+    thumb_img = resize_image_to_max_width(img,640)
+    detections,labels,thumb_img = detect(thumb_img,facmodel,licpmodel,faces=faces,licenseplates=licenseplates)
+    img = drawDetections(img,detections,min_thresh,box = box,blur=blur,detectionsize=thumb_img.size)
 
-def getImgAnonymized(img,facmodel,licpmodel,faces=True,licenseplates=True,min_thresh = 0.5):
-    pass
+    return img
+
 
 def resize_image_to_max_width(img, max_width):
     ratio = img.size[1]/img.size[0]
@@ -93,13 +98,10 @@ def resize_image_to_max_width(img, max_width):
 fa_model = YOLO('models/best_faces_yolo11m_100epochs_13-6-2025.pt', task='detect')
 li_model = YOLO('models/best_licenseplates_yolo11m_100epochs_11-6-2025.pt', task='detect')
 
-#im = Image.open('test_img1["Cross walk" by docpop is licensed under CC BY-SA 2.0].jpg') 
-#im = Image.open('/home/zezo/anonpill/test_img2["Ranger directing traffic at North Entrance" by YellowstoneNPS is marked with Public Domain Mark 1.0].jpg')
-im = Image.open('test_img3 ["people-waiting-at-the-bus-station-19143071" by Kelly from Pexel].jpg')
+im = Image.open('docs/test_img1.jpg') 
+#im = Image.open('docs/test_img2.jpg')
+#im = Image.open('docs/test_img3.jpg')
 #im = ImageOps.contain(im, (resW,resH))
-im = im.convert('RGB')
-im = resize_image_to_max_width(im,640)
-print("im size: ",im.size)
-im_ = getImgDetected(im,fa_model,li_model,box=False,faces=False,licenseplates=False)
 
+im_ = getImgAnonymized(im,fa_model,li_model,box=True,faces=True,licenseplates=True)
 im_.show()
