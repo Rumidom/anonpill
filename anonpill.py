@@ -1,5 +1,4 @@
-from PIL import Image,ImageOps,ImageDraw,ImageFilter,ImageFont
-import cv2
+from PIL import Image,ImageDraw,ImageFilter,ImageFont
 import numpy as np
 from ultralytics import YOLO
 import math
@@ -28,7 +27,7 @@ def pointsDistance(p0, p1):
 
 def blurRectangle(img,p0,p1):
     # Create rectangle mask
-    mask = Image.new('L', im.size, 0)
+    mask = Image.new('L', img.size, 0)
     draw = ImageDraw.Draw(mask)
     draw.rectangle([ p0,p1], fill=255)
 
@@ -41,7 +40,7 @@ def drawDetections(im,detections,min_thresh,box = True,blur=True,circle=False,de
 
     # Create a drawing object
     draw = ImageDraw.Draw(im)
-    print('n detections: ',len(detections))
+    dets = 0
     for i in range(len(detections)):
 
         # Get bounding box coordinates
@@ -57,7 +56,6 @@ def drawDetections(im,detections,min_thresh,box = True,blur=True,circle=False,de
         ymin = yratio*ymin
         xmax = xratio*xmax
         ymax = yratio*ymax
-        print(xmin,ymin,xmax,ymax)
         # Get bounding box class ID and name
         classidx = int(detections[i].cls.item())
 
@@ -66,6 +64,7 @@ def drawDetections(im,detections,min_thresh,box = True,blur=True,circle=False,de
 
         # Draw box if confidence threshold is high enough
         if conf > min_thresh:
+            dets += 1
             if circle:
                 #center = (int((xmin + xmax)/2),int((ymin + ymax)/2))
                 #radius = int(pointsDistance(center, (xmax,ymax)))
@@ -77,10 +76,12 @@ def drawDetections(im,detections,min_thresh,box = True,blur=True,circle=False,de
                 conf_str = f'{int(conf*100)}%'
                 font = ImageFont.truetype('Roboto.ttf', 15)  # You can change the font and size
                 draw.text((xmin, ymin), conf_str, fill='red', font=font)
-
+    print('n detections: ', dets)
     return im
 
-def getImgAnonymized(img,facmodel,licpmodel,faces=True,licenseplates=True,box = True,blur=True,min_thresh = 0.5,fullsize=True):
+def getImgAnonymized(img,faces=True,licenseplates=True,box = True,blur=True,min_thresh = 0.5,fullsize=True):
+    facmodel = YOLO('models/best_faces_yolo11m_100epochs_13-6-2025.pt', task='detect')
+    licpmodel = YOLO('models/best_licenseplates_yolo11m_100epochs_11-6-2025.pt', task='detect')
     img = img.convert('RGB')
     thumb_img = resize_image_to_max_width(img,640)
     detections,labels,thumb_img = detect(thumb_img,facmodel,licpmodel,faces=faces,licenseplates=licenseplates)
@@ -95,13 +96,3 @@ def resize_image_to_max_width(img, max_width):
     resized_img = img.resize((max_width, height))
     return resized_img
 
-fa_model = YOLO('models/best_faces_yolo11m_100epochs_13-6-2025.pt', task='detect')
-li_model = YOLO('models/best_licenseplates_yolo11m_100epochs_11-6-2025.pt', task='detect')
-
-im = Image.open('docs/test_img1.jpg') 
-#im = Image.open('docs/test_img2.jpg')
-#im = Image.open('docs/test_img3.jpg')
-#im = ImageOps.contain(im, (resW,resH))
-
-im_ = getImgAnonymized(im,fa_model,li_model,box=True,faces=True,licenseplates=True)
-im_.show()
