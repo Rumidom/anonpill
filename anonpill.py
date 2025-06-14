@@ -78,8 +78,8 @@ def drawDetections(im,detections,min_thresh,box = False,blur=True,circle=False,d
     return im
 
 def getImgAnonymized(img,faces=True,licenseplates=True,box = False,blur=True,min_thresh = 0.5):
-    facmodel = YOLO('utils/models/best_faces_yolo11m_100epochs_13-6-2025.pt', task='detect')
-    licpmodel = YOLO('utils/models/best_licenseplates_yolo11m_120epochs_14-6-2025.pt', task='detect')
+    facmodel = YOLO('models/best_faces_yolo11m_100epochs_13-6-2025.pt', task='detect')
+    licpmodel = YOLO('models/best_licenseplates_yolo11m_120epochs_14-6-2025.pt', task='detect')
     img = img.convert('RGB')
     thumb_img = resize_image_to_max_width(img,640)
     detections,labels,thumb_img = detect(thumb_img,facmodel,licpmodel,faces=faces,licenseplates=licenseplates)
