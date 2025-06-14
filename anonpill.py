@@ -3,8 +3,6 @@ import numpy as np
 from ultralytics import YOLO
 import math
 
-resW = 640
-resH = 640
  
 def detect(img,facmodel,licpmodel,faces=True,licenseplates=True):
     detections = []
@@ -36,7 +34,7 @@ def blurRectangle(img,p0,p1):
 
     return img
 
-def drawDetections(im,detections,min_thresh,box = True,blur=True,circle=False,detectionsize=None):
+def drawDetections(im,detections,min_thresh,box = False,blur=True,circle=False,detectionsize=None):
 
     # Create a drawing object
     draw = ImageDraw.Draw(im)
@@ -74,19 +72,18 @@ def drawDetections(im,detections,min_thresh,box = True,blur=True,circle=False,de
             if box:
                 draw.rectangle(((xmin,ymin), (xmax,ymax)), outline = 'red')
                 conf_str = f'{int(conf*100)}%'
-                font = ImageFont.truetype('Roboto.ttf', 15)  # You can change the font and size
+                font = ImageFont.truetype('Roboto-Bold.ttf', 15)  # You can change the font and size
                 draw.text((xmin, ymin), conf_str, fill='red', font=font)
     print('n detections: ', dets)
     return im
 
-def getImgAnonymized(img,faces=True,licenseplates=True,box = True,blur=True,min_thresh = 0.5,fullsize=True):
-    facmodel = YOLO('models/best_faces_yolo11m_100epochs_13-6-2025.pt', task='detect')
-    licpmodel = YOLO('models/best_licenseplates_yolo11m_100epochs_11-6-2025.pt', task='detect')
+def getImgAnonymized(img,faces=True,licenseplates=True,box = False,blur=True,min_thresh = 0.5):
+    facmodel = YOLO('utils/models/best_faces_yolo11m_100epochs_13-6-2025.pt', task='detect')
+    licpmodel = YOLO('utils/models/best_licenseplates_yolo11m_120epochs_14-6-2025.pt', task='detect')
     img = img.convert('RGB')
     thumb_img = resize_image_to_max_width(img,640)
     detections,labels,thumb_img = detect(thumb_img,facmodel,licpmodel,faces=faces,licenseplates=licenseplates)
     img = drawDetections(img,detections,min_thresh,box = box,blur=blur,detectionsize=thumb_img.size)
-
     return img
 
 
